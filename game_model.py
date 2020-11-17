@@ -1,8 +1,8 @@
-
+import random
 
 # read from a sokoban file instance
 
-f = open("sok_input1.txt")
+f = open("sokoban01.txt") #for whatever relevant file
 
 specs = []
 
@@ -56,9 +56,10 @@ start_loc = (int(line5[0]), int(line5[2]))
 
 specs.append(start_loc)
 
+print(specs)
+
 # this completes reading from the given input file
 
-print(specs)
 
 class Game:
 	def __init__(self, sizeH, sizeV, wallSquares, Boxes, storLocs, startLoc):
@@ -74,72 +75,82 @@ class Game:
 	def legal_moves(self):
 		moves = []
 
-		right_loc = (self.currLoc[0] + 1, self.currLoc[1])
-		if right_loc in self.Boxes:
-			two_away = (right_loc[0] + 1, right_loc[1])
-			if two_away not in self.Boxes and two_away not in self.wallSquares:
-				moves.append('r')
-		if right_loc not in self.Boxes and right_loc not in self.wallSquares:
-			moves.append('r')
-
-		left_loc = (self.currLoc[0] - 1, self.currLoc[1])
-		if left_loc in self.Boxes:
-			two_away = (left_loc[0] - 1, left_loc[1])
-			if two_away not in self.Boxes and two_away not in self.wallSquares:
-				moves.append('l')
-		if left_loc not in self.Boxes and left_loc not in self.WallSquares:
-			moves.append('l')
-
-		up_loc = (self.currLoc[0], self.currLoc[1] + 1)
-		if up_loc in self.Boxes:
-			two_away = (up_loc[0], up_loc[1] + 1)
-			if two_away not in self.Boxes and two_away not in self.wallSquares:
-				moves.append('u')
-		if up_loc not in self.Boxes and up_loc not in self.wallSquares:
-			moves.append('u')
-
-		down_loc = (self.currLoc[0], self.currLoc[1] - 1)
+		down_loc = (self.currLoc[0] + 1, self.currLoc[1])
 		if down_loc in self.Boxes:
-			two_away = (down_loc[0], down_loc[1] - 1)
+			two_away = (down_loc[0] + 1, down_loc[1])
 			if two_away not in self.Boxes and two_away not in self.wallSquares:
 				moves.append('d')
 		if down_loc not in self.Boxes and down_loc not in self.wallSquares:
 			moves.append('d')
 
+		up_loc = (self.currLoc[0] - 1, self.currLoc[1])
+		if up_loc in self.Boxes:
+			two_away = (up_loc[0] - 1, up_loc[1])
+			if two_away not in self.Boxes and two_away not in self.wallSquares:
+				moves.append('u')
+		if up_loc not in self.Boxes and up_loc not in self.wallSquares:
+			moves.append('u')
+
+		right_loc = (self.currLoc[0], self.currLoc[1] + 1)
+		if right_loc in self.Boxes:
+			two_away = (right_loc[0], right_loc[1] + 1)
+			if two_away not in self.Boxes and two_away not in self.wallSquares:
+				moves.append('r')
+		if right_loc not in self.Boxes and right_loc not in self.wallSquares:
+			moves.append('r')
+
+		left_loc = (self.currLoc[0], self.currLoc[1] - 1)
+		if left_loc in self.Boxes:
+			two_away = (left_loc[0], left_loc[1] - 1)
+			if two_away not in self.Boxes and two_away not in self.wallSquares:
+				moves.append('l')
+		if left_loc not in self.Boxes and left_loc not in self.wallSquares:
+			moves.append('l')
+
+		return moves
+
 	def implement_move(self, move):
 		# move is one of r,l,u,d
 		
+		if move == 'd':
+			down_loc = (self.currLoc[0] + 1, self.currLoc[1])
+			two_away = (down_loc[0] + 1, down_loc[1])
+			self.currLoc = down_loc
+			if down_loc in self.Boxes:
+				self.Boxes.remove(down_loc)
+				self.Boxes.append(two_away)
+				
+		if move == 'u':
+			up_loc = (self.currLoc[0] - 1, self.currLoc[1])
+			two_away = (up_loc[0] - 1, up_loc[1])
+			self.currLoc = up_loc
+			if up_loc in self.Boxes:
+				self.Boxes.remove(up_loc)
+				self.Boxes.append(two_away)
+				
 		if move == 'r':
-			right_loc = (self.currLoc[0] + 1, self.currLoc[1])
-			two_away = (right_loc[0] + 1, right_loc[1])
+			right_loc = (self.currLoc[0], self.currLoc[1] + 1)
+			two_away = (right_loc[0], right_loc[1] +1)
 			self.currLoc = right_loc
 			if right_loc in self.Boxes:
 				self.Boxes.remove(right_loc)
 				self.Boxes.append(two_away)
 				
 		if move == 'l':
-			left_loc = (self.currLoc[0] - 1, self.currLoc[1])
-			two_away = (left_loc[0] - 1, right_loc[1])
+			left_loc = (self.currLoc[0], self.currLoc[1] - 1)
+			two_away = (left_loc[0], left_loc[1] - 1)
 			self.currLoc = left_loc
 			if left_loc in self.Boxes:
 				self.Boxes.remove(left_loc)
 				self.Boxes.append(two_away)
-				
-		if move == 'u':
-			up_loc = (self.currLoc[0], self.currLoc[1] + 1)
-			two_away = (up_loc[0], up_loc[1] +1)
-			self.currLoc = up_loc
-			if up_loc in self.Boxes:
-				self.Boxes.remove(up_loc)
-				self.Boxes.append(two_away)
-				
-		if move == 'd':
-			down_loc = (self.currLoc[0], self.currLoc[1] - 1)
-			two_away = (down_loc[0], down_loc[1] - 1)
-			self.currLoc = down_loc
-			if up_loc in self.Boxes:
-				self.Boxes.remove(down_loc)
-				self.Boxes.append(two_away)
 
+
+our_game = Game(specs[0], specs[1], specs[2], specs[3], specs[4], specs[5])
+
+poss_moves = our_game.legal_moves()
+
+print(poss_moves)
+
+our_game.implement_move(random.choice(poss_moves))
 
 
