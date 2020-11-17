@@ -2,7 +2,7 @@ import random
 
 # read from a sokoban file instance
 
-f = open("sokoban01.txt") #for whatever relevant file
+f = open("sok_input1.txt") #for whatever relevant file
 
 specs = []
 
@@ -144,8 +144,13 @@ class Game:
 				self.Boxes.remove(left_loc)
 				self.Boxes.append(two_away)
 
+	def solved(self):
+		return set(self.Boxes) == set(self.storLocs)
+
 
 our_game = Game(specs[0], specs[1], specs[2], specs[3], specs[4], specs[5])
+
+print(our_game.solved())
 
 poss_moves = our_game.legal_moves()
 
@@ -153,4 +158,4 @@ print(poss_moves)
 
 our_game.implement_move(random.choice(poss_moves))
 
-
+print(our_game.solved())
