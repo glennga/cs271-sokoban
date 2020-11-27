@@ -1,14 +1,15 @@
+import __init__
 import mctsnode as nd
 import numpy as np
 import game_model as game
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MCTS:
 
-	def __init__(self, Node, Verbose):
+	def __init__(self, Node):
 		self.root = Node
-		self.verbose = Verbose
-
 
 	def pickChild(self, Node):
 
@@ -62,7 +63,7 @@ class MCTS:
 
 	def expansion(self, Leaf):
 		if(game.solved(Leaf.state)):
-			print ("Solved")
+			logger.info('Game has been solved.')
 			return False
 		elif(Leaf.visits == 0):
 			print ("yea wtf no visits")
@@ -75,8 +76,7 @@ class MCTS:
 						continue
 					Leaf.AppendChild(newChild)
 			child = self.pickChildNode(Leaf)
-		if(self.verbose):
-			print ("Expanded: ", game.GetStateRepresentation(child.state))
+		logger.debug(f'Expanded: {game.GetStateRepresentation(child.state)}')
 		return child
 
 
@@ -88,8 +88,7 @@ class MCTS:
 		while(not(game.solved(currState)) and count < bound):
 			currState = game.pickpossState(currState)
 			count += 1
-			if(self.verbose):
-				print ("currState:", game.GetStateRepresentation(currState))
+			logger.debug(f'Current state: {game.GetStateRepresentation(currState)}')
 
 		result = game.getResult(currState)
 		return result
@@ -137,22 +136,18 @@ class MCTS:
 
 	def run(self, iters = 10000):
 		for i in range(iters):
-			if(self.verbose):
-				print ("\n===== Begin iteration:", i, "=====")
+			logger.debug(f'==== Starting iteration {i}. ==== ')
 			X = self.selection()
 			Y = self.expansion(X)
 			if(Y):
 				Result = self.simulation(Y, 20)
-				if(self.verbose):
-					print ("Result: ", Result)
+				logger.debug(f'Result of simulation: {Result}')
 				self.backpropagation(Y, Result)
 			else:
 				Result = game.getResult(X.state)
-				if(self.verbose):
-					print ("Result: ", Result)
+				logger.debug(f'Result of simulation: {Result}')
 				self.backpropagation(X, Result)
 		
 
-		print ("Search complete.")
-		print ("Iterations:", i)
+		logger.info(f'Search complete. Iterations = {i}')
 

@@ -3,11 +3,10 @@ import numpy as np
 import singplayermcts as mc 
 import game_model as game
 
+if __name__ == '__main__':
+    rootState = game.createGame("resources/sokoban03.txt")
 
-rootState = game.createGame("sokoban03.txt")
+    root = nd.Node(rootState)
+    x = mc.MCTS(root)
 
-root = nd.Node(rootState)
-
-x = mc.MCTS(root, True)
-
-x.run()
+    x.run()
