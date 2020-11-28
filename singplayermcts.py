@@ -62,8 +62,9 @@ class MCTS:
 
 
 	def expansion(self, Leaf):
-		if(game.solved(Leaf.state)):
-			logger.info('Game has been solved.')
+		if(game.isTerminal(Leaf.state)):
+			logger.info('Game has reached a terminal state.')
+			logger.debug(f'Current game state: \n{Leaf.state}')
 			return False
 		elif(Leaf.visits == 0):
 			print ("yea wtf no visits")
@@ -85,7 +86,7 @@ class MCTS:
 
 		count = 0
 
-		while(not(game.solved(currState)) and count < bound):
+		while(not(game.isTerminal(currState)) and count < bound):
 			currState = game.pickpossState(currState)
 			count += 1
 			logger.debug(f'Current state: {game.GetStateRepresentation(currState)}')

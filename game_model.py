@@ -13,9 +13,9 @@ class Game:
 		# Boxes = list of tuples, storLocs = list of tuples, startLoc = tuple
 		self.sizeH = sizeH
 		self.sizeV = sizeV
-		self.wallSquares = wallSquares
-		self.Boxes = Boxes
-		self.storLocs = storLocs
+		self.wallSquares = wallSquares.copy()
+		self.Boxes = Boxes.copy()
+		self.storLocs = storLocs.copy()
 		self.currLoc = startLoc
 
 	def __str__(self):
@@ -147,11 +147,12 @@ def legal_moves(currState):
 	return moves
 
 
-
 def solved(currState):
 	return set(currState.Boxes) == set(currState.storLocs)
 
 
+def isTerminal(currState):
+	return solved(currState) or any(inBadCorner(x, currState) for x in currState.Boxes)
 
 
 def makeMove(state, move):
