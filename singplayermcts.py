@@ -20,7 +20,7 @@ class MCTS:
 
 		for Child in Node.children:
 			if Child.visits == 0.0:
-				print("why no visits")
+				# print("why no visits")
 				return Child
 
 		maxUTC = 0.0
@@ -45,12 +45,18 @@ class MCTS:
 
 		return selected
 
+	def manhattanDistance(self):
+		pass
+
 
 	def findChildren(self, Node):
 		nextStates = game.possibleStates(Node.state)
 		children = []
 		for state in nextStates:
 			ChildNode = nd.Node(state)
+			boxes = ChildNode.state.Boxes
+			targets = ChildNode.state.storLocs
+			c_heuristic = ...
 			children.append(ChildNode)
 
 		return children
@@ -67,7 +73,7 @@ class MCTS:
 			logger.debug(f'Current game state: \n{Leaf.state}')
 			return False
 		elif(Leaf.visits == 0):
-			print ("yea wtf no visits")
+			# print ("yea wtf no visits")
 			return Leaf
 		else:
 			if(len(Leaf.children) == 0):
@@ -152,3 +158,28 @@ class MCTS:
 
 		logger.info(f'Search complete. Iterations = {i}')
 
+	def display_moves(self):
+		""" Traverse our root to a terminal state, choosing the most "winning" nodes along the way. """
+		logger.info('Now printing the solution to console. ')
+		output_str = ''
+
+		current_node = self.root
+		i = 0  # Current step count.
+		logger.debug(f'{i}. Starting state.')
+
+		previous_move, current_move_count = None, 1
+		while len(current_node.children) != 0:
+			current_node = max(current_node.children, key=lambda x: x.wins)
+			current_move = current_node.state.move_taken
+
+			logger.debug(f'{i} Taking {str(current_move)}.')
+			if previous_move != current_move:
+				output_str = output_str +  f'{current_move_count} {str(current_node.state.move_taken)} '
+				current_move_count = 1
+			else:
+				current_move_count = current_move_count + 1
+			previous_move = current_move
+
+		output_str = output_str + f'{current_move_count} {str(current_node.state.move_taken)} '
+		logger.info(f'In project format: {output_str}.')
+		print(output_str)
