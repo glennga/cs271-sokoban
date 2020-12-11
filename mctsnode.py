@@ -5,6 +5,7 @@ class Node:
 		self.visits = 0.0
 		self.ressq = 0.0
 		self.heuristic = 0.0
+		self.weighted_hueristic = 0.0
 		self.parent = None
 		self.children = []
 		self.sputc = 0.0
