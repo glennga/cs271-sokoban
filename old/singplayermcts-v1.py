@@ -3,9 +3,6 @@ import mctsnode as nd
 import numpy as np
 import game_model as game
 import logging
-import math
-from hungarian_algorithm import algorithm
-
 
 logger = logging.getLogger(__name__)
 
@@ -48,60 +45,20 @@ class MCTS:
 
 		return selected
 
-	def manhattanDistance(coordinate_1, coordinate_2):
-		return abs(coordinate_1[0] - coordinate_2[0]) + abs(coordinate_1[1] - coordinate_2[1])
-
-	def euclidian_distance (coordinate_1, coordinate_2):
-		return math.sqrt((coordinate_1[0] - coordinate_2[0])**2 + (coordinate_1[1] - coordinate_2[1])**2)
-
-	def euclidian_perfect_matching(boxes, targets):
-		box_dict = {}
-		target_dict = {}
-		for i in range(1, len(boxes) + 1):
-			box_dict[i] = boxes[i-1]
-			target_dict[i+1000] = targets[i-1]
-		
-		
-		bp_graph = {}
-		for box in box_dict.keys():
-			for target in target_dict.keys():
-				weight = euclidian_distance(box_dict[box], target_dict[target])
-				if box in bp_graph:
-					bp_graph[box][target] = weight
-					
-				else:
-					bp_graph[box] = {}
-					bp_graph[box][target] = weight
-					
-		return algorithm.find_matching(G, matching_type = 'min', return_type = 'total')
-	
-		
-	
-	def manhattan_perfect_matching():
+	def manhattanDistance(self):
 		pass
-	
+
+
 	def findChildren(self, Node):
 		nextStates = game.possibleStates(Node.state)
 		children = []
 		for state in nextStates:
 			ChildNode = nd.Node(state)
-			boxes = ChildNode.state.Boxes
-			targets = ChildNode.state.storLocs
-			#c_heuristic = euclidean_perfect_matching(boxes, targets)
-			childNode.heuristic = euclidean_perfect_matching(boxes, targets)
+			boxes = ChildNode.state.boxes
+			targets = ChildNode.state.storage_locations
+			c_heuristic = ...
 			children.append(ChildNode)
-			
-		heur_weights = []
-		for child in children:
-			heur_weights.append(child.heuristic)
-			
-		total_weight = sum(heur_weights)*1.0
-		prob_list = [weight/total_weight for weight in heur_weights]
-		prob_list = prob_list[::-1]
 
-		for i in range(len(children))::
-			children[i].weighted_heuristic = prob_list[i]
-		
 		return children
 
 	def pickChildNode(self, Node):
@@ -175,7 +132,7 @@ class MCTS:
 		else:
 			t = Node.parent.visits
 
-		UTC = 0.5*(w/n + c * np.sqrt(np.log(t) / n)) + 0.5*Node.weighted_heuristic
+		UTC = w/n + c * np.sqrt(np.log(t) / n)
 
 		#D = 1000
 

@@ -10,7 +10,7 @@ class TestGameModel(unittest.TestCase):
         #.#        #$#
         ###        ###
         """
-        solve_box_1 = [gm.Game.Move.DOWN]
+        solve_box_1 = [gm.GameState.Move.DOWN]
 
         m0 = gm.createGame('resources/sokoban00.txt')
         self.assertEqual(len(gm.legal_moves(m0)), 1)
@@ -31,28 +31,28 @@ class TestGameModel(unittest.TestCase):
         #  .# @#        # @$#  #
         ########        ########
         """
-        solve_box_1 = [gm.Game.Move.LEFT, gm.Game.Move.UP, gm.Game.Move.LEFT, gm.Game.Move.LEFT, gm.Game.Move.RIGHT,
-                       gm.Game.Move.UP, gm.Game.Move.RIGHT]
-        solve_box_2 = [gm.Game.Move.UP, gm.Game.Move.UP, gm.Game.Move.LEFT, gm.Game.Move.LEFT, gm.Game.Move.LEFT,
-                       gm.Game.Move.DOWN, gm.Game.Move.LEFT, gm.Game.Move.UP]
-        solve_box_3 = [gm.Game.Move.DOWN, gm.Game.Move.RIGHT, gm.Game.Move.DOWN, gm.Game.Move.DOWN, gm.Game.Move.LEFT,
-                       gm.Game.Move.DOWN, gm.Game.Move.RIGHT]
+        solve_box_1 = [gm.GameState.Move.LEFT, gm.GameState.Move.UP, gm.GameState.Move.LEFT, gm.GameState.Move.LEFT, gm.GameState.Move.RIGHT,
+                       gm.GameState.Move.UP, gm.GameState.Move.RIGHT]
+        solve_box_2 = [gm.GameState.Move.UP, gm.GameState.Move.UP, gm.GameState.Move.LEFT, gm.GameState.Move.LEFT, gm.GameState.Move.LEFT,
+                       gm.GameState.Move.DOWN, gm.GameState.Move.LEFT, gm.GameState.Move.UP]
+        solve_box_3 = [gm.GameState.Move.DOWN, gm.GameState.Move.RIGHT, gm.GameState.Move.DOWN, gm.GameState.Move.DOWN, gm.GameState.Move.LEFT,
+                       gm.GameState.Move.DOWN, gm.GameState.Move.RIGHT]
 
         m0 = gm.createGame('resources/sokoban01.txt')
         self.assertEqual(len(gm.legal_moves(m0)), 2)
-        self.assertIn(gm.Game.Move.LEFT, gm.legal_moves(m0))
-        self.assertIn(gm.Game.Move.UP, gm.legal_moves(m0))
+        self.assertIn(gm.GameState.Move.LEFT, gm.legal_moves(m0))
+        self.assertIn(gm.GameState.Move.UP, gm.legal_moves(m0))
         self.assertFalse(gm.solved(m0))
-        self.assertEqual(len(set(m0.Boxes).difference(set(m0.storLocs))), 3)
+        self.assertEqual(len(set(m0.boxes).difference(set(m0.storage_locations))), 3)
 
         mi = m0
         for move in solve_box_1:
             mi = gm.makeMove(mi, move)
-        self.assertEqual(len(set(mi.Boxes).difference(set(mi.storLocs))), 2)
+        self.assertEqual(len(set(mi.boxes).difference(set(mi.storage_locations))), 2)
 
         for move in solve_box_2:
             mi = gm.makeMove(mi, move)
-        self.assertEqual(len(set(mi.Boxes).difference(set(mi.storLocs))), 1)
+        self.assertEqual(len(set(mi.boxes).difference(set(mi.storage_locations))), 1)
 
         for move in solve_box_3:
             mi = gm.makeMove(mi, move)
@@ -66,12 +66,12 @@ class TestGameModel(unittest.TestCase):
         #@ #        #  #
         ####        ####
         """
-        solve_box_1 = [gm.Game.Move.RIGHT, gm.Game.Move.UP]
+        solve_box_1 = [gm.GameState.Move.RIGHT, gm.GameState.Move.UP]
 
         m0 = gm.createGame('resources/sokoban02.txt')
         self.assertEqual(len(gm.legal_moves(m0)), 2)
-        self.assertIn(gm.Game.Move.UP, gm.legal_moves(m0))
-        self.assertIn(gm.Game.Move.RIGHT, gm.legal_moves(m0))
+        self.assertIn(gm.GameState.Move.UP, gm.legal_moves(m0))
+        self.assertIn(gm.GameState.Move.RIGHT, gm.legal_moves(m0))
         self.assertFalse(gm.solved(m0))
 
         m1 = gm.makeMove(m0, solve_box_1[0])
@@ -87,20 +87,20 @@ class TestGameModel(unittest.TestCase):
         #@   #        #    #
         ######        ######
         """
-        solve_box_1 = [gm.Game.Move.UP, gm.Game.Move.RIGHT, gm.Game.Move.UP]
-        solve_box_2 = [gm.Game.Move.DOWN, gm.Game.Move.RIGHT, gm.Game.Move.UP]
+        solve_box_1 = [gm.GameState.Move.UP, gm.GameState.Move.RIGHT, gm.GameState.Move.UP]
+        solve_box_2 = [gm.GameState.Move.DOWN, gm.GameState.Move.RIGHT, gm.GameState.Move.UP]
 
         m0 = gm.createGame('resources/sokoban03.txt')
         self.assertEqual(len(gm.legal_moves(m0)), 2)
-        self.assertIn(gm.Game.Move.RIGHT, gm.legal_moves(m0))
-        self.assertIn(gm.Game.Move.UP, gm.legal_moves(m0))
+        self.assertIn(gm.GameState.Move.RIGHT, gm.legal_moves(m0))
+        self.assertIn(gm.GameState.Move.UP, gm.legal_moves(m0))
         self.assertFalse(gm.solved(m0))
-        self.assertEqual(len(set(m0.Boxes).difference(set(m0.storLocs))), 2)
+        self.assertEqual(len(set(m0.boxes).difference(set(m0.storage_locations))), 2)
 
         mi = m0
         for move in solve_box_1:
             mi = gm.makeMove(mi, move)
-        self.assertEqual(len(set(mi.Boxes).difference(set(mi.storLocs))), 1)
+        self.assertEqual(len(set(mi.boxes).difference(set(mi.storage_locations))), 1)
 
         for move in solve_box_2:
             mi = gm.makeMove(mi, move)
@@ -115,39 +115,39 @@ class TestGameModel(unittest.TestCase):
         #@   #        #    #
         ######        ######
         """
-        fail_upleft = [gm.Game.Move.UP, gm.Game.Move.RIGHT, gm.Game.Move.UP, gm.Game.Move.RIGHT, gm.Game.Move.UP,
-                       gm.Game.Move.LEFT]
-        fail_upright = [gm.Game.Move.UP, gm.Game.Move.RIGHT, gm.Game.Move.RIGHT, gm.Game.Move.UP, gm.Game.Move.LEFT,
-                        gm.Game.Move.UP, gm.Game.Move.RIGHT]
-        fail_bottomleft = [gm.Game.Move.UP, gm.Game.Move.UP, gm.Game.Move.UP, gm.Game.Move.RIGHT, gm.Game.Move.DOWN,
-                           gm.Game.Move.DOWN, gm.Game.Move.RIGHT, gm.Game.Move.DOWN, gm.Game.Move.LEFT]
-        fail_bottomright = [gm.Game.Move.UP, gm.Game.Move.UP, gm.Game.Move.UP, gm.Game.Move.RIGHT, gm.Game.Move.RIGHT,
-                            gm.Game.Move.DOWN, gm.Game.Move.DOWN, gm.Game.Move.LEFT, gm.Game.Move.DOWN,
-                            gm.Game.Move.RIGHT]
+        fail_upleft = [gm.GameState.Move.UP, gm.GameState.Move.RIGHT, gm.GameState.Move.UP, gm.GameState.Move.RIGHT, gm.GameState.Move.UP,
+                       gm.GameState.Move.LEFT]
+        fail_upright = [gm.GameState.Move.UP, gm.GameState.Move.RIGHT, gm.GameState.Move.RIGHT, gm.GameState.Move.UP, gm.GameState.Move.LEFT,
+                        gm.GameState.Move.UP, gm.GameState.Move.RIGHT]
+        fail_bottomleft = [gm.GameState.Move.UP, gm.GameState.Move.UP, gm.GameState.Move.UP, gm.GameState.Move.RIGHT, gm.GameState.Move.DOWN,
+                           gm.GameState.Move.DOWN, gm.GameState.Move.RIGHT, gm.GameState.Move.DOWN, gm.GameState.Move.LEFT]
+        fail_bottomright = [gm.GameState.Move.UP, gm.GameState.Move.UP, gm.GameState.Move.UP, gm.GameState.Move.RIGHT, gm.GameState.Move.RIGHT,
+                            gm.GameState.Move.DOWN, gm.GameState.Move.DOWN, gm.GameState.Move.LEFT, gm.GameState.Move.DOWN,
+                            gm.GameState.Move.RIGHT]
 
         mi = gm.createGame('resources/sokoban03.txt')
         for move in fail_upleft:
             mi = gm.makeMove(mi, move)
         self.assertFalse(gm.solved(mi))
-        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.Boxes))
+        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.boxes))
 
         mi = gm.createGame('resources/sokoban03.txt')
         for move in fail_upright:
             mi = gm.makeMove(mi, move)
         self.assertFalse(gm.solved(mi))
-        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.Boxes))
+        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.boxes))
 
         mi = gm.createGame('resources/sokoban03.txt')
         for move in fail_bottomleft:
             mi = gm.makeMove(mi, move)
         self.assertFalse(gm.solved(mi))
-        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.Boxes))
+        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.boxes))
 
         mi = gm.createGame('resources/sokoban03.txt')
         for move in fail_bottomright:
             mi = gm.makeMove(mi, move)
         self.assertFalse(gm.solved(mi))
-        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.Boxes))
+        self.assertTrue(any(gm.inBadCorner(b, mi) for b in mi.boxes))
 
 
 if __name__ == '__main__':
