@@ -58,7 +58,7 @@ class MCTS:
             y = self._expansion(x)
 
             if y is not None:
-                h, w = self._simulation(y)
+                h, w = self._simulation(y, i)
                 self._back_propagation(y, h, w)
             else:
                 h = self.heuristic_f(x.state)
@@ -124,6 +124,9 @@ class MCTS:
         children = []
         for state in node.state.get_possible_states():
             children.append(Node(state))
+            gm.GameVisualize.handle_state(
+                state, f'EXPANSION_{str(state.move_taken_from_parent)}_FROM_{str(node.state)}'
+            )
 
         return children
 
@@ -165,7 +168,7 @@ class MCTS:
             logger.debug(f'Expanded the following node: {child}')
             return child
 
-    def _simulation(self, node: Node):
+    def _simulation(self, node: Node, i: int):
         """
         1. Randomly traverse our tree from the given game state until we reach a terminal state OR until we reach our
         simulation bound.
@@ -177,7 +180,7 @@ class MCTS:
         while not current_state.is_terminal() and count < self.simulation_bound:
             current_state = gm.GameModel.make_random_move(current_state)
             count = count + 1
-            gm.GameVisualize.handle_state(current_state)
+            gm.GameVisualize.handle_state(current_state, f'SIMULATION_{i}_FROM_{str(node.state.current_location)}')
 
         return self.heuristic_f(current_state), (1 if current_state.is_solved() else 0)
 

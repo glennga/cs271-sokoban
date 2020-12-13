@@ -119,7 +119,7 @@ class GameState:
         params.append(None)
 
         our_game = GameState(*params)
-        GameVisualize.handle_state(our_game)
+        GameVisualize.handle_state(our_game, 'NEW_GAME_FROM_FILE')
         return our_game
 
     def is_solved(self) -> bool:
@@ -189,7 +189,7 @@ class GameState:
                 new_state.boxes.append(two_away)
 
         new_state._validate()  # TODO: Remove me for the final product.
-        GameVisualize.handle_state(new_state)
+        # GameVisualize.handle_state(new_state, f'MOVING_{action}_FROM_{self.current_location}')
         return new_state
 
     def get_possible_states(self) -> List[GameState]:
@@ -345,25 +345,27 @@ class GameVisualize:
         curses.endwin()
 
     @staticmethod
-    def handle_state(state: GameState):
+    def handle_state(state: GameState, title_string: str):
         logger.debug(f'Current state:\n{state}')
-        GameVisualize._update_screen(str(state))
+        GameVisualize._update_screen(str(state), title_string)
 
     @staticmethod
-    def _update_screen(game_string: str):
+    def _update_screen(game_string: str, title_string: str):
         global _screen
         if _screen is None:
             return
 
-        # Get the dimensions of our screen and our game string.
-        screen_rows, screen_cols = _screen.getmaxyx()
-        game_rows = game_string.count('\n')
-        game_cols = max([len(s) for s in game_string.split('\n')])
+        # Start with a new screen.
+        _screen.erase()
 
         # Pad our game string to have an equal number of characters.
+        game_cols = max([len(s) for s in game_string.split('\n')])
         game_string_as_rows = [f'{s: <{game_cols}}' for s in game_string.split('\n')]
-        starting_col = int(screen_cols / 2.) - int(game_cols / 2.)
-        starting_row = int(screen_rows / 2.) - int(game_rows / 2.)
+        starting_col = 0
+        starting_row = 1
+
+        # Print our title.
+        _screen.addstr(starting_row - 1, starting_col, title_string)
 
         # Finally, print our game to the console.
         for i, row_string in enumerate(game_string_as_rows):
