@@ -7,9 +7,10 @@ import random
 import logging
 import enum
 import math
+import curses
 
 logger = logging.getLogger(__name__)
-
+_screen = None
 
 class GameMove(enum.IntEnum):
     DOWN = 0
@@ -118,7 +119,7 @@ class GameState:
         params.append(None)
 
         our_game = GameState(*params)
-        logger.debug(f'New game state: \n{our_game}')
+        GameVisualize.handle_state(our_game)
         return our_game
 
     def is_solved(self) -> bool:
@@ -127,18 +128,23 @@ class GameState:
 
     def in_bad_corner(self, box_location) -> bool:
         """ Determine if we are in an unwinnable state. """
-        x = box_location[0]
-        y = box_location[1]
+        x, y = box_location
+
+        # Box is in a storage location. This is already solved.
         if (x, y) in self.storage_locations:
             return False
-        if (x - 1, y) in self.wall_squares and (x, y + 1) in self.wall_squares:
+
+        # Box is in a corner with a wall.
+        blocking_squares = set(self.wall_squares) & set(self.boxes)
+        if (x - 1, y) in blocking_squares and (x, y + 1) in blocking_squares:
             return True
-        if (x + 1, y) in self.wall_squares and (x, y - 1) in self.wall_squares:
+        if (x + 1, y) in blocking_squares and (x, y - 1) in blocking_squares:
             return True
-        if (x, y + 1) in self.wall_squares and (x + 1, y) in self.wall_squares:
+        if (x, y + 1) in blocking_squares and (x + 1, y) in blocking_squares:
             return True
-        if (x, y - 1) in self.wall_squares and (x - 1, y) in self.wall_squares:
+        if (x, y - 1) in blocking_squares and (x - 1, y) in blocking_squares:
             return True
+
         return False
 
     def is_terminal(self) -> bool:
@@ -183,7 +189,7 @@ class GameState:
                 new_state.boxes.append(two_away)
 
         new_state._validate()  # TODO: Remove me for the final product.
-        logger.debug(f'New game state: \n{new_state}')
+        GameVisualize.handle_state(new_state)
         return new_state
 
     def get_possible_states(self) -> List[GameState]:
@@ -256,7 +262,7 @@ class GameModel:
         return random.choice(state.get_possible_states())
 
     @staticmethod
-    def heuristic_1(state: GameState) -> float:
+    def heuristic_1(state: GameState):
         """ Heuristic 1: The ratio of the number of boxes in correct storage locations. """
         in_place = len(set(state.boxes) & set(state.storage_locations))
         resultant = 0.0000001 + in_place / float(len(state.storage_locations))
@@ -264,7 +270,7 @@ class GameModel:
         return resultant
 
     @staticmethod
-    def heuristic_2(state: GameState) -> float:
+    def heuristic_2(state: GameState):
         """ Heuristic 2: The number of boxes in storage locations - the number of boxes in bad states. """
         bad_boxes = 0
         for box in state.boxes:
@@ -285,16 +291,6 @@ class GameModel:
             box_dict[i] = state.boxes[i - 1]
             target_dict[i + 1000] = state.storage_locations[i - 1]
 
-        # bp_graph = {}
-        # for box in box_dict.keys():
-        #     for target in target_dict.keys():
-        #         weight = GameModel._manhattan_distance(box_dict[box], target_dict[target])
-        #         if box in bp_graph:
-        #             bp_graph[box][target] = weight
-        #
-        #         else:
-        #             bp_graph[box] = {}
-        #             bp_graph[box][target] = weight
         bp_matrix = []
         for box in box_dict.keys():
             inner_vec = []
@@ -302,21 +298,29 @@ class GameModel:
                 inner_vec.append(GameModel._manhattan_distance(box_dict[box], target_dict[target]))
             bp_matrix.append(inner_vec)
 
-        print(bp_matrix)
+        logger.debug(f'Matrix: {bp_matrix}')
         hungarian = Hungarian()
         hungarian.calculate(bp_matrix)
+        total_potential = hungarian.get_total_potential()
 
-        total_pot = hungarian.get_total_potential()
-
-        min_bad_person = 10000
+        # Factor in the minimum distance of our player to a box not in its storage location.
+        min_player_distance_to_box = 10000  # Note: some arbitrary high number...
         for box in state.boxes:
             if box not in state.storage_locations:
                 bad_person = GameModel._manhattan_distance(state.current_location, box)
-                if min_bad_person > bad_person:
-                    min_bad_person = bad_person
+                if min_player_distance_to_box > bad_person:
+                    min_player_distance_to_box = bad_person
 
-        resultant = min_bad_person + total_pot
-        logger.debug(f'Heuristic value 3: [{resultant} | {min_bad_person} | {total_pot}]')
+        resultant = min_player_distance_to_box + total_potential
+        logger.debug(f'Heuristic value 3: {{ "potential": {resultant}, "player_d": {min_player_distance_to_box} }}')
+        return resultant
+
+    @staticmethod
+    def heuristic_3_correction(h: float, root_h: float):
+        """ Correction function to apply to incorporate heuristic 3 into the UCT formula. """
+        # resultant =
+        resultant = 1 - ((h / root_h) if h < root_h else 0)
+        logger.debug(f'Corrected heuristic value 3: {resultant}')
         return resultant
 
     @staticmethod
@@ -325,4 +329,43 @@ class GameModel:
 
     @staticmethod
     def _euclidean_distance(coordinate_1: Tuple, coordinate_2: Tuple) -> float:
-        return math.sqrt((coordinate_1[0] - coordinate_2[0])**2 + (coordinate_1[1] - coordinate_2[1])**2)
+        return math.sqrt((coordinate_1[0] - coordinate_2[0]) ** 2 + (coordinate_1[1] - coordinate_2[1]) ** 2)
+
+
+class GameVisualize:
+    """ Curses manager (for the screen singleton) to help with visualizing our game. """
+    @staticmethod
+    def start_instance():
+        global _screen
+        _screen = curses.initscr()
+        curses.curs_set(0)
+
+    @staticmethod
+    def kill_instance():
+        curses.endwin()
+
+    @staticmethod
+    def handle_state(state: GameState):
+        logger.debug(f'Current state:\n{state}')
+        GameVisualize._update_screen(str(state))
+
+    @staticmethod
+    def _update_screen(game_string: str):
+        global _screen
+        if _screen is None:
+            return
+
+        # Get the dimensions of our screen and our game string.
+        screen_rows, screen_cols = _screen.getmaxyx()
+        game_rows = game_string.count('\n')
+        game_cols = max([len(s) for s in game_string.split('\n')])
+
+        # Pad our game string to have an equal number of characters.
+        game_string_as_rows = [f'{s: <{game_cols}}' for s in game_string.split('\n')]
+        starting_col = int(screen_cols / 2.) - int(game_cols / 2.)
+        starting_row = int(screen_rows / 2.) - int(game_rows / 2.)
+
+        # Finally, print our game to the console.
+        for i, row_string in enumerate(game_string_as_rows):
+            _screen.addstr(starting_row + i, starting_col, row_string)
+        _screen.refresh()

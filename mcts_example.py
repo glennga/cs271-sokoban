@@ -16,6 +16,17 @@ import game_model as gm
 if __name__ == '__main__':
     root_state = gm.GameState.build('resources/sokoban01.txt')
     root_node = mc.Node(root_state)
-    x = mc.MCTS(root_node, gm.GameModel.heuristic_3, 20)
+    x = mc.MCTS(**{
+        'root': root_node,
+        'heuristic_f': gm.GameModel.heuristic_3,
+        'simulation_bound': 1000,
+        'exploration_c': 0.5,
+        'uncertainty_d': 50.0,
+        'heuristic_correction_f': gm.GameModel.heuristic_3_correction
+    })
+
+    gm.GameVisualize.start_instance()
     x.run(1000)
-    x.get_solution()
+
+    gm.GameVisualize.kill_instance()
+    # x.get_solution()
