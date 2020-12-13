@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple
-from hungarian_algorithm import algorithm
+from hungarian_alg import Hungarian
 
 import __init__
 import random
@@ -244,7 +244,11 @@ class GameState:
 
 
 class GameModel:
-    """ This class holds all information pertaining to evaluating a game state (keeping MCTS somewhat in mind). """
+    """
+    - This class holds all information pertaining to evaluating a game state (keeping MCTS somewhat in mind).
+    - Notes for heuristics: all heuristics MUST fit within the bound (0, 1]. They should represent some evaluation of
+    a game state. If the heuristic goes beyond 1, then you must adjust the exploration_c term in MCTS.
+    """
 
     @staticmethod
     def make_random_move(state: GameState) -> GameState:
@@ -252,39 +256,68 @@ class GameModel:
         return random.choice(state.get_possible_states())
 
     @staticmethod
-    def heuristic_1(state: GameState):
-        """ Heuristic 1: 10 + the number of boxes in storage locations - the number of boxes in bad states. """
+    def heuristic_1(state: GameState) -> float:
+        """ Heuristic 1: The ratio of the number of boxes in correct storage locations. """
+        in_place = len(set(state.boxes) & set(state.storage_locations))
+        resultant = 0.0000001 + in_place / float(len(state.storage_locations))
+        logger.debug(f'Heuristic value 1: {resultant}')
+        return resultant
+
+    @staticmethod
+    def heuristic_2(state: GameState) -> float:
+        """ Heuristic 2: The number of boxes in storage locations - the number of boxes in bad states. """
         bad_boxes = 0
         for box in state.boxes:
             if state.in_bad_corner(box):
                 bad_boxes = bad_boxes + 1
 
         in_place = len(set(state.boxes) & set(state.storage_locations))
-        resultant = 10 + in_place - bad_boxes
-        logger.debug(f'Heuristic value 1: {resultant}')
+        resultant = max(0.000001, (in_place - bad_boxes) / len(state.storage_locations))
+        logger.debug(f'Heuristic value 2: {resultant}')
         return resultant
 
     @staticmethod
-    def heuristic_2(state: GameState):
-        """ Heuristic 2: Euclidean perfect matching (Karthik can expand on this). """
+    def heuristic_3(state: GameState) -> float:
+        """ Heuristic 3: Euclidean / manhattan perfect matching (Karthik can expand on this). """
         box_dict = {}
         target_dict = {}
         for i in range(1, len(state.boxes) + 1):
             box_dict[i] = state.boxes[i - 1]
             target_dict[i + 1000] = state.storage_locations[i - 1]
 
-        bp_graph = {}
+        # bp_graph = {}
+        # for box in box_dict.keys():
+        #     for target in target_dict.keys():
+        #         weight = GameModel._manhattan_distance(box_dict[box], target_dict[target])
+        #         if box in bp_graph:
+        #             bp_graph[box][target] = weight
+        #
+        #         else:
+        #             bp_graph[box] = {}
+        #             bp_graph[box][target] = weight
+        bp_matrix = []
         for box in box_dict.keys():
+            inner_vec = []
             for target in target_dict.keys():
-                weight = GameModel._euclidean_distance(box_dict[box], target_dict[target])
-                if box in bp_graph:
-                    bp_graph[box][target] = weight
+                inner_vec.append(GameModel._manhattan_distance(box_dict[box], target_dict[target]))
+            bp_matrix.append(inner_vec)
 
-                else:
-                    bp_graph[box] = {}
-                    bp_graph[box][target] = weight
+        print(bp_matrix)
+        hungarian = Hungarian()
+        hungarian.calculate(bp_matrix)
 
-        return algorithm.find_matching(bp_graph, matching_type='min', return_type='total')
+        total_pot = hungarian.get_total_potential()
+
+        min_bad_person = 10000
+        for box in state.boxes:
+            if box not in state.storage_locations:
+                bad_person = GameModel._manhattan_distance(state.current_location, box)
+                if min_bad_person > bad_person:
+                    min_bad_person = bad_person
+
+        resultant = min_bad_person + total_pot
+        logger.debug(f'Heuristic value 3: [{resultant} | {min_bad_person} | {total_pot}]')
+        return resultant
 
     @staticmethod
     def _manhattan_distance(coordinate_1: Tuple, coordinate_2: Tuple) -> float:
@@ -293,4 +326,3 @@ class GameModel:
     @staticmethod
     def _euclidean_distance(coordinate_1: Tuple, coordinate_2: Tuple) -> float:
         return math.sqrt((coordinate_1[0] - coordinate_2[0])**2 + (coordinate_1[1] - coordinate_2[1])**2)
-

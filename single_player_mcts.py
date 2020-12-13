@@ -16,12 +16,12 @@ class Node:
 		self.state = state
 		self.wins = 0
 		self.visits = 0
-		self.ressq = 0.0
-		self.heuristic = 0.0
-		self.weighted_hueristic = 0.0
+		# self.res_sq = 0.0
+		# self.heuristic = 0.0
+		# self.weighted_hueristic = 0.0
 		self.parent = None
 		self.children = []
-		self.sputc = 0.0
+		self.sp_uct = 0.0
 
 	def add_child(self, child: Node):
 		self.children.append(child)
@@ -38,10 +38,11 @@ class Node:
 
 
 class MCTS:
-	def __init__(self, root: Node, heuristic_f: Callable, simulation_bound: int = 20):
+	def __init__(self, root: Node, heuristic_f: Callable, simulation_bound: int = 20, exploration_c: float = 0.5):
 		self.root = root
 		self.heuristic_f = heuristic_f
 		self.simulation_bound = simulation_bound
+		self.exploration_c = exploration_c
 
 	def run(self, iterations: int):
 		"""
@@ -98,20 +99,20 @@ class MCTS:
 		"""
 		1. If the given node has no children, return this node.
 		2. If we find a child that has never been visited, return this node.
-		3. Otherwise, choose the child with the largest UTC value.
+		3. Otherwise, choose the child with the largest UCT value.
 		"""
 		selected = node
 		if selected.is_leaf():
 			return selected
 
-		max_utc = 0
+		max_uct = 0
 		for child in node.children:
 			if child.visits == 0:
 				return child
 
-			this_utc = child.sputc
-			if this_utc > max_utc:
-				max_utc = this_utc
+			this_uct = child.sp_uct
+			if this_uct > max_uct:
+				max_uct = this_uct
 				selected = child
 
 		return selected
@@ -181,23 +182,28 @@ class MCTS:
 
 	def _back_propagation(self, node: Node, h: float, w: int):
 		""" From the given node with a terminal state, propagate all of results up to the root. """
-		current_node = node
-		current_node.wins = current_node.wins + w
-		current_node.ressq = h ** 2
+		root_h = self.heuristic_f(self.root.state)
+
+		current_node = node  # TODO: Rewrite heuristic to do this only for heuristic_3
+		current_node.wins = current_node.wins + (1 - ((h / root_h) if h < root_h else 0))
+		# current_node.res_sq = h ** 2
 		current_node.visits = current_node.visits + 1
-		current_node.sputc = self._calculate_utc(current_node)
+		current_node.sp_uct = self._calculate_uct(current_node)
 
 		while current_node.is_descendant():
 			current_node = current_node.parent
-			current_node.wins = current_node.wins + w
-			current_node.ressq = h ** 2
+			current_node.wins = current_node.wins + (1 - ((h / root_h) if h < root_h else 0))
+			# current_node.res_sq = h ** 2
 			current_node.visits = current_node.visits + 1
-			current_node.sputc = self._calculate_utc(current_node)
+			current_node.sp_uct = self._calculate_uct(current_node)
 
-	@staticmethod
-	def _calculate_utc(node: Node):
-		""" Compute the UTC value associated with a given node. """
-		c = 0.5
+	def _calculate_uct(self, node: Node):
+		"""
+		- Compute the UCT (upper confidence bounds applied to trees) value associated with a given node. This value is:
+		(the win ratio of a child) + (exploration constant) * sqrt(log(parent visits) / child visits)
+		- The first term corresponds to exploitation, while the second corresponds to exploration.
+		"""
+		c = self.exploration_c
 		w = node.wins
 		n = node.visits
 		# sumsq = node.ressq  # Note: what is this value for?
