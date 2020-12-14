@@ -47,8 +47,18 @@ class Solution:
             self.move_sequence.appendleft(current_node.state.move_taken_from_parent)
             current_node = current_node.parent
 
-    def __call__(self, *args, **kwargs):
-        return self.move_sequence
+    def __iter__(self):
+        self.working_index = 0
+        return self
+
+    def __next__(self):
+        if self.working_index < len(self.move_sequence):
+            resultant = self.move_sequence[self.working_index]
+            self.working_index += 1
+            return resultant
+
+        else:
+            raise StopIteration
 
     def __str__(self):
         output_str = ''
@@ -190,10 +200,10 @@ class MCTS:
         solution instance.
         """
         current_state = node.state
+        simulated_moves = deque()
         count = 0
 
         # Traverse to a terminal state.
-        simulated_moves = deque()
         while not current_state.is_terminal() and count < self.simulation_bound:
             current_state = gm.GameModel.make_random_move(current_state)
             gm.GameVisualize.handle_state(current_state, f'SIMULATION_{i}')
