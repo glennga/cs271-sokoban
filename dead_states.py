@@ -1,9 +1,8 @@
-
-
-
 import collections
-#if child is a box add it but don't take any children of boxes
-#if child is wal ignore
+
+
+# if child is a box add it but don't take any children of boxes
+# if child is wal ignore
 
 
 def generate_graph(game_board):
@@ -11,7 +10,7 @@ def generate_graph(game_board):
     white_space_coordinates = set()
     box_coordinates = set()
     target_coordinates = set()
-    agent_coordinate = (0,0)
+    agent_coordinate = (0, 0)
 
     for i in range(len(game_board)):
         for j in range(len(game_board[i])):
@@ -19,40 +18,37 @@ def generate_graph(game_board):
                 pass
             else:
                 if game_board[i][j] == " ":
-                    white_space_coordinates.add((i,j))
+                    white_space_coordinates.add((i, j))
                 elif game_board[i][j] == ".":
-                    target_coordinates.add((i,j))
+                    target_coordinates.add((i, j))
 
-                elif game_baord[i][j] == "$":
-                    box_coordinates.add((i,j))
+                elif game_board[i][j] == "$":
+                    box_coordinates.add((i, j))
 
                 else:
-                    agent_coordinate = (i,j)
-
+                    agent_coordinate = (i, j)
 
                 children = []
-                if j-1 > 0 and game_board[i][j-1] != "#":
-                    children.append((i, j-1))
-                elif j+1 < len(game_board[i]) and game_board[i][j+1] != "#":
-                    children.append((i,j + 1))
-                elif i-1 > 0 and game_board[i-1][j] != "#":
-                    children.append((i,j))
+                if j - 1 > 0 and game_board[i][j - 1] != "#":
+                    children.append((i, j - 1))
+                elif j + 1 < len(game_board[i]) and game_board[i][j + 1] != "#":
+                    children.append((i, j + 1))
+                elif i - 1 > 0 and game_board[i - 1][j] != "#":
+                    children.append((i, j))
 
-                elif i+1 < len(game_board) and game_board[i][j+1] != "#":
-                    children.append((i,j))
+                elif i + 1 < len(game_board) and game_board[i][j + 1] != "#":
+                    children.append((i, j))
 
-                G[(i,j)] = children
-
+                G[(i, j)] = children
 
     return (G, white_space_coordinates, box_coordinates, target_coordinates, agent_coordinate)
 
-def modified_bfs(G):
 
-    agent_coordinate = G[4])
+def modified_bfs(G):
+    agent_coordinate = G[4]
     connected_components = []
-    
+
     explored = set()
-    
 
     queue = collections.deque([])
 
@@ -65,30 +61,25 @@ def modified_bfs(G):
             l = list(l)
             queue.append(l[0])
             pass
-            #add connected component and create new one
-            #pick new non_target and add start bfs from there.
+            # add connected component and create new one
+            # pick new non_target and add start bfs from there.
 
         else:
             node = queue.popleft()
             cc.append(node)
-            
 
-            if node in box_coordinates:
+            if node in G[2]:
                 pass
             else:
-                for children in GG[0][node]:
+                for children in G[0][node]:
                     if children not in explored:
                         queue.append(children)
 
             explored.add(node)
 
-
-
-
     queue.append(agent_coordinate)
 
     return connected_components
-
 
 
 def check_dead_state(game_board):
@@ -101,5 +92,3 @@ def check_dead_state(game_board):
 
     else:
         return 1
-
-

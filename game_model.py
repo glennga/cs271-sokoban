@@ -8,6 +8,114 @@ import logging
 import enum
 import math
 import curses
+import collections
+
+
+def generate_graph(game_board):
+    G = {}
+    white_space_coordinates = set()
+    box_coordinates = set()
+    target_coordinates = set()
+    agent_coordinate = (0, 0)
+
+    for i in range(len(game_board)):
+        for j in range(len(game_board[i])):
+            if game_board[i][j] == "#":
+                pass
+            else:
+                if game_board[i][j] == " ":
+                    white_space_coordinates.add((i, j))
+                elif game_board[i][j] == ".":
+                    target_coordinates.add((i, j))
+
+                elif game_board[i][j] == "$":
+                    box_coordinates.add((i, j))
+
+                else:
+                    agent_coordinate = (i, j)
+
+                children = []
+                if j - 1 > 0 and game_board[i][j - 1] != "#":
+                    children.append((i, j - 1))
+                elif j + 1 < len(game_board[i]) and game_board[i][j + 1] != "#":
+                    children.append((i, j + 1))
+                elif i - 1 > 0 and game_board[i - 1][j] != "#":
+                    children.append((i, j))
+
+                elif i + 1 < len(game_board) and game_board[i][j + 1] != "#":
+                    children.append((i, j))
+
+                G[(i, j)] = children
+
+    return (G, white_space_coordinates, box_coordinates, target_coordinates, agent_coordinate)
+
+
+def modified_bfs(G):
+    agent_coordinate = G[4]
+    connected_components = []
+
+    explored = set()
+
+    queue = collections.deque([])
+
+    cc = []
+    while len(explored) < len(G[1]) + len(G[2]) + len(G[3]) + 1:
+        if len(queue) == 0:
+            connected_components.append(cc)
+            cc = []
+            l = G[1].union(G[3]) - explored
+            l = list(l)
+            queue.append(l[0])
+            pass
+            # add connected component and create new one
+            # pick new non_target and add start bfs from there.
+
+        else:
+            node = queue.popleft()
+            cc.append(node)
+
+            if node in G[2]:
+                pass
+            else:
+                for children in G[0][node]:
+                    if children not in explored:
+                        queue.append(children)
+
+            explored.add(node)
+
+    queue.append(agent_coordinate)
+
+    return connected_components
+
+
+def check_dead_state(game_board):
+    G = generate_graph(game_board)
+
+    connected_components = modified_bfs(G)
+
+    if len(connected_components) > 1:
+        return 0
+
+    else:
+        return 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 logger = logging.getLogger(__name__)
 _screen = None
@@ -45,6 +153,9 @@ class GameState:
         self.storage_locations = storage_locations.copy()
         self.current_location = starting_location
         self.move_taken_from_parent = move_taken_from_parent
+
+    def return_in_2d(self):
+        return [[y for y in x] for x in str(self).split('\n')][:-1]
 
     def __str__(self):
         """ Walls are '#', storage locations are '.', boxes are '$', and the player is '@'. """
@@ -149,7 +260,8 @@ class GameState:
 
     def is_terminal(self) -> bool:
         """ A game is in a terminal state if it is solved, or if it is in an unwinnable state. """
-        return self.is_solved() or any(self.in_bad_corner(x) for x in self.boxes)
+        return check_dead_state(self.return_in_2d()) == 0 or self.is_solved()
+        # return self.is_solved() or any(self.in_bad_corner(x) for x in self.boxes)
 
     def move(self, action: GameMove) -> GameState:
         """ Move to a new state. This DOES NOT mutate our current state, rather it creates a new state. """
@@ -189,7 +301,6 @@ class GameState:
                 new_state.boxes.append(two_away)
 
         new_state._validate()  # TODO: Remove me for the final product.
-        # GameVisualize.handle_state(new_state, f'MOVING_{action}_FROM_{self.current_location}')
         return new_state
 
     def get_possible_states(self) -> List[GameState]:
