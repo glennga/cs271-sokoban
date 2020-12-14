@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Union
 from typing import Callable
+from collections import deque
 
 import __init__
 import game_model as gm
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class Node:
+    """ A node in our search space. """
     def __init__(self, state: gm.GameState):
         self.state = state
         self.h_sum = 0
@@ -34,6 +36,39 @@ class Node:
         return f'{str(self.state.current_location)} from taking move {str(self.state.move_taken_from_parent)}.'
 
 
+class Solution:
+    """ A sequence of moves that take the root state to a solved state. """
+    def __init__(self, node: Node, simulated_moves: deque):
+        self.move_sequence = simulated_moves
+
+        # Append the moves of our parents, all the way to the root.
+        current_node = node
+        while current_node.is_descendant():
+            self.move_sequence.appendleft(current_node.state.move_taken_from_parent)
+            current_node = current_node.parent
+
+    def __call__(self, *args, **kwargs):
+        return self.move_sequence
+
+    def __str__(self):
+        output_str = ''
+
+        previous_move, current_move_count = None, 1
+        for move in self.move_sequence:
+            if previous_move != move:
+                output_str += f'{current_move_count} {str(move)} '
+                current_move_count = 1
+            else:
+                current_move_count += 1
+            previous_move = move
+
+        # Account for the tail.
+        if current_move_count > 1:
+            output_str += f'{current_move_count} {str(previous_move)} '
+
+        return output_str
+
+
 class MCTS:
     def __init__(self, root: Node, heuristic_f: Callable, simulation_bound: int = 20, exploration_c: float = 0.5,
                  uncertainty_d: float = 50, heuristic_correction_f: Callable = lambda h, root_h: h):
@@ -45,55 +80,34 @@ class MCTS:
         self.heuristic_f = heuristic_f
         self.heuristic_correction_f = heuristic_correction_f
 
-    def run(self, iterations: int):
+    def run(self, iterations: int) -> Union[Solution, None]:
         """
         1. For the given amount of iterations...
         2. Select a leaf node and expand it.
         3. If we have not reached a terminal state, then simulate and backpropagate.
-        4. Otherwise, backpropagate our result.
+        4. If-- while simulating we have found a solution, exit early.
+        5. Otherwise, backpropagate our result.
+        :return None if no solution. Otherwise, the solution to the given problem.
         """
         for i in range(iterations):
-            logger.debug(f'Starting iteration {i}.')
+            logger.info(f'Starting iteration {i}.')
             x = self._selection()
             y = self._expansion(x)
 
             if y is not None:
-                h, w = self._simulation(y, i)
-                self._back_propagation(y, h, w)
+                h = self._simulation(y, i)
+                if isinstance(h, Solution):
+                    logger.info(f'Solution has been found in {i + 1} iterations!')
+                    logger.info(f'Solution is: {str(h)}')
+                    return h
+
+                self._back_propagation(y, h)
             else:
                 h = self.heuristic_f(x.state)
-                w = x.state.is_solved()
-                self._back_propagation(x, h, w)
+                self._back_propagation(x, h)
 
-        logger.info('Search complete.')
-
-    def get_solution(self) -> str:
-        """ Traverse our root to a terminal state, choosing the most "winning" nodes along the way. """
-        logger.info('Now traversing our tree to find the solution.')
-        output_str = ''
-
-        current_node = self.root
-        i = 1  # Current step count.
-        logger.debug('0 - Starting state.')
-
-        previous_move, current_move_count = None, 1
-        while len(current_node.children) != 0:
-            current_node = max(current_node.children, key=lambda x: x.h_sum)
-            current_move = current_node.state.move_taken_from_parent
-
-            logger.debug(f'{i} - Taking move {str(current_move)}.')
-            if previous_move != current_move:
-                output_str = output_str + f'{current_move_count} {str(current_node.state.move_taken_from_parent)} '
-                current_move_count = 1
-            else:
-                current_move_count = current_move_count + 1
-            previous_move = current_move
-            i = i + 1
-
-        if current_move_count > 1:  # Account for tail.
-            output_str = output_str + f'{current_move_count} {str(current_node.state.move_taken_from_parent)} '
-        logger.info(f'In project format: {output_str}.')
-        return output_str
+        logger.info('Search has timed out, no solution found.')
+        return None
 
     @staticmethod
     def _pick_child(node: Node):
@@ -172,23 +186,29 @@ class MCTS:
         """
         1. Randomly traverse our tree from the given game state until we reach a terminal state OR until we reach our
         simulation bound.
-        2. Return a) the heuristic value associated with this state, and b) if the terminal state is a win or not.
+        2. Return the heuristic value associated with this state if the game has not been won. Otherwise, return a
+        solution instance.
         """
         current_state = node.state
         count = 0
 
+        # Traverse to a terminal state.
+        simulated_moves = deque()
         while not current_state.is_terminal() and count < self.simulation_bound:
             current_state = gm.GameModel.make_random_move(current_state)
+            gm.GameVisualize.handle_state(current_state, f'SIMULATION_{i}')
+            simulated_moves.append(current_state.move_taken_from_parent)
             count = count + 1
-            gm.GameVisualize.handle_state(current_state, f'SIMULATION_{i}_FROM_{str(node.state.current_location)}')
 
-        return self.heuristic_f(current_state), (1 if current_state.is_solved() else 0)
+        if not current_state.is_solved():
+            return self.heuristic_f(current_state)
+        else:
+            return Solution(node, simulated_moves)
 
-    def _back_propagation(self, node: Node, h: float, w: int):
+    def _back_propagation(self, node: Node, h: float):
         """ From the given node with a terminal state, propagate all of results up to the root. """
         root_h = self.heuristic_f(self.root.state)
         corrected_h = self.heuristic_correction_f(h, root_h)
-        corrected_h = corrected_h if w == 0 else 1  # Default to 1 if we have won.
 
         current_node = node
         current_node.h_sum += corrected_h
