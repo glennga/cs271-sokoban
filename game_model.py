@@ -14,7 +14,7 @@ import collections
 logger = logging.getLogger(__name__)
 _screen = None
 
-class GameMove(enum.IntEnum):
+class Action(enum.IntEnum):
     DOWN = 0
     UP = 1
     RIGHT = 2
@@ -24,11 +24,11 @@ class GameMove(enum.IntEnum):
         return {0: 'D', 1: 'U', 2: 'R', 3: 'L'}[self.value]
 
 
-class GameState:
+class State:
     """ This class holds all state related information about a game (agnostic about MCTS). """
 
     def __init__(self, size_h: int, size_v: int, wall_squares: List[tuple], boxes: List[tuple],
-                 storage_locations: List[tuple], starting_location: tuple, move_taken_from_parent: GameMove):
+                 storage_locations: List[tuple], starting_location: tuple, move_taken_from_parent: Action):
         """
         :param size_h: Size of grid (h).
         :param size_v: Size of grid (v).
@@ -72,7 +72,7 @@ class GameState:
         return resultant
 
     @staticmethod
-    def build(filename: str) -> GameState:
+    def build(filename: str) -> State:
         """ Create an instance of our game for some file. """
         create_list_from_string = lambda a: [(int(a[i]), int(a[i + 1])) for i in range(0, int(len(a)), 2)]
         logger.info(f'Creating game for file: {filename}.')
@@ -96,7 +96,7 @@ class GameState:
         line5 = f.readline().strip().split(' ')
         start_loc = (int(line5[0]), int(line5[1]))
 
-        our_game = GameState(**{
+        our_game = State(**{
             'size_h': h_size,
             'size_v': v_size,
             'wall_squares': wall_list,
@@ -105,7 +105,7 @@ class GameState:
             'starting_location': start_loc,
             'move_taken_from_parent': None
         })
-        GameVisualize.handle_state(our_game, 'NEW_GAME_FROM_FILE')
+        Visual.handle_state(our_game, 'NEW_GAME_FROM_FILE')
         return our_game
 
     def is_solved(self) -> bool:
@@ -121,7 +121,7 @@ class GameState:
             return False
 
         # Box is in a corner with a wall.
-        blocking_squares = set(self.wall_squares) & set(self.boxes)
+        blocking_squares = set(self.wall_squares) | set(self.boxes)
         if (x - 1, y) in blocking_squares and (x, y + 1) in blocking_squares:
             return True
         if (x + 1, y) in blocking_squares and (x, y - 1) in blocking_squares:
@@ -138,12 +138,12 @@ class GameState:
         # return check_dead_state(self.return_in_2d()) == 0 or self.is_solved()
         return self.is_solved() or any(self.in_bad_corner(x) for x in self.boxes)
 
-    def move(self, action: GameMove) -> GameState:
+    def move(self, action: Action) -> State:
         """ Move to a new state. This DOES NOT mutate our current state, rather it creates a new state. """
-        new_state = GameState(self.size_h, self.size_v, self.wall_squares, self.boxes, self.storage_locations,
-                              self.current_location, action)
+        new_state = State(self.size_h, self.size_v, self.wall_squares, self.boxes, self.storage_locations,
+                          self.current_location, action)
 
-        if action == GameMove.DOWN:
+        if action == Action.DOWN:
             down_loc = (new_state.current_location[0] + 1, new_state.current_location[1])
             two_away = (down_loc[0] + 1, down_loc[1])
             new_state.current_location = down_loc
@@ -151,7 +151,7 @@ class GameState:
                 new_state.boxes.remove(down_loc)
                 new_state.boxes.append(two_away)
 
-        elif action == GameMove.UP:
+        elif action == Action.UP:
             up_loc = (new_state.current_location[0] - 1, new_state.current_location[1])
             two_away = (up_loc[0] - 1, up_loc[1])
             new_state.current_location = up_loc
@@ -159,7 +159,7 @@ class GameState:
                 new_state.boxes.remove(up_loc)
                 new_state.boxes.append(two_away)
 
-        elif action == GameMove.RIGHT:
+        elif action == Action.RIGHT:
             right_loc = (new_state.current_location[0], new_state.current_location[1] + 1)
             two_away = (right_loc[0], right_loc[1] + 1)
             new_state.current_location = right_loc
@@ -167,7 +167,7 @@ class GameState:
                 new_state.boxes.remove(right_loc)
                 new_state.boxes.append(two_away)
 
-        elif action == GameMove.LEFT:
+        elif action == Action.LEFT:
             left_loc = (new_state.current_location[0], new_state.current_location[1] - 1)
             two_away = (left_loc[0], left_loc[1] - 1)
             new_state.current_location = left_loc
@@ -178,14 +178,14 @@ class GameState:
         new_state._validate()  # TODO: Remove me for the final product.
         return new_state
 
-    def get_possible_states(self) -> List[GameState]:
+    def get_possible_states(self) -> List[State]:
         """ Get all possible game states that can result from a legal action of our current game state. """
         next_states = []
         for action in self._legal_moves():
             next_states.append(self.move(action))
         return next_states
 
-    def _legal_moves(self) -> List[GameMove]:
+    def _legal_moves(self) -> List[Action]:
         """ Moves are represented here as {'down': 0, 'up': 1, 'right': 2, 'left': 3}. """
         moves = []
 
@@ -193,33 +193,33 @@ class GameState:
         if down_loc in self.boxes:
             two_away = (down_loc[0] + 1, down_loc[1])
             if two_away not in self.boxes and two_away not in self.wall_squares:
-                moves.append(GameMove.DOWN)
+                moves.append(Action.DOWN)
         if down_loc not in self.boxes and down_loc not in self.wall_squares:
-            moves.append(GameMove.DOWN)
+            moves.append(Action.DOWN)
 
         up_loc = (self.current_location[0] - 1, self.current_location[1])
         if up_loc in self.boxes:
             two_away = (up_loc[0] - 1, up_loc[1])
             if two_away not in self.boxes and two_away not in self.wall_squares:
-                moves.append(GameMove.UP)
+                moves.append(Action.UP)
         if up_loc not in self.boxes and up_loc not in self.wall_squares:
-            moves.append(GameMove.UP)
+            moves.append(Action.UP)
 
         right_loc = (self.current_location[0], self.current_location[1] + 1)
         if right_loc in self.boxes:
             two_away = (right_loc[0], right_loc[1] + 1)
             if two_away not in self.boxes and two_away not in self.wall_squares:
-                moves.append(GameMove.RIGHT)
+                moves.append(Action.RIGHT)
         if right_loc not in self.boxes and right_loc not in self.wall_squares:
-            moves.append(GameMove.RIGHT)
+            moves.append(Action.RIGHT)
 
         left_loc = (self.current_location[0], self.current_location[1] - 1)
         if left_loc in self.boxes:
             two_away = (left_loc[0], left_loc[1] - 1)
             if two_away not in self.boxes and two_away not in self.wall_squares:
-                moves.append(GameMove.LEFT)
+                moves.append(Action.LEFT)
         if left_loc not in self.boxes and left_loc not in self.wall_squares:
-            moves.append(GameMove.LEFT)
+            moves.append(Action.LEFT)
 
         logger.debug(f'Current legal moves: {moves}')
         return moves
@@ -235,7 +235,7 @@ class GameState:
             raise RuntimeError('In illegal state. Player should not be inside wall.')
 
 
-class GameModel:
+class Evaluation:
     """
     - This class holds all information pertaining to evaluating a game state (keeping MCTS somewhat in mind).
     - Notes for heuristics: all heuristics MUST fit within the bound (0, 1]. They should represent some evaluation of
@@ -243,12 +243,12 @@ class GameModel:
     """
 
     @staticmethod
-    def make_random_move(state: GameState) -> GameState:
+    def make_random_move(state: State) -> State:
         """ Move in some random direction. """
         return random.choice(state.get_possible_states())
 
     @staticmethod
-    def heuristic_1(state: GameState):
+    def heuristic_1(state: State):
         """ Heuristic 1: The ratio of the number of boxes in correct storage locations. """
         in_place = len(set(state.boxes) & set(state.storage_locations))
         resultant = 0.0000001 + in_place / float(len(state.storage_locations))
@@ -256,7 +256,7 @@ class GameModel:
         return resultant
 
     @staticmethod
-    def heuristic_2(state: GameState):
+    def heuristic_2(state: State):
         """ Heuristic 2: The number of boxes in storage locations - the number of boxes in bad states. """
         bad_boxes = 0
         for box in state.boxes:
@@ -269,7 +269,7 @@ class GameModel:
         return resultant
 
     @staticmethod
-    def heuristic_3(state: GameState) -> float:
+    def heuristic_3(state: State) -> float:
         """ Heuristic 3: Euclidean / manhattan perfect matching (Karthik can expand on this). """
         box_dict = {}
         target_dict = {}
@@ -281,7 +281,7 @@ class GameModel:
         for box in box_dict.keys():
             inner_vec = []
             for target in target_dict.keys():
-                inner_vec.append(GameModel._manhattan_distance(box_dict[box], target_dict[target]))
+                inner_vec.append(Evaluation._manhattan_distance(box_dict[box], target_dict[target]))
             bp_matrix.append(inner_vec)
 
         logger.debug(f'Matrix: {bp_matrix}')
@@ -293,7 +293,7 @@ class GameModel:
         min_player_distance_to_box = 10000  # Note: some arbitrary high number...
         for box in state.boxes:
             if box not in state.storage_locations:
-                bad_person = GameModel._manhattan_distance(state.current_location, box)
+                bad_person = Evaluation._manhattan_distance(state.current_location, box)
                 if min_player_distance_to_box > bad_person:
                     min_player_distance_to_box = bad_person
 
@@ -318,7 +318,7 @@ class GameModel:
         return math.sqrt((coordinate_1[0] - coordinate_2[0]) ** 2 + (coordinate_1[1] - coordinate_2[1]) ** 2)
 
 
-class GameVisualize:
+class Visual:
     """ Curses manager (for the screen singleton) to help with visualizing our game. """
     @staticmethod
     def start_instance():
@@ -331,9 +331,9 @@ class GameVisualize:
         curses.endwin()
 
     @staticmethod
-    def handle_state(state: GameState, title_string: str):
+    def handle_state(state: State, title_string: str):
         logger.debug(f'Current state:\n{state}')
-        GameVisualize._update_screen(str(state), title_string)
+        Visual._update_screen(str(state), title_string)
 
     @staticmethod
     def _update_screen(game_string: str, title_string: str):
