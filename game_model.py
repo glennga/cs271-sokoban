@@ -121,7 +121,7 @@ class State:
             return False
 
         # Box is in a corner with a wall.
-        blocking_squares = set(self.wall_squares) | set(self.boxes)
+        blocking_squares = set(self.wall_squares)
         if (x - 1, y) in blocking_squares and (x, y + 1) in blocking_squares:
             return True
         if (x + 1, y) in blocking_squares and (x, y - 1) in blocking_squares:
