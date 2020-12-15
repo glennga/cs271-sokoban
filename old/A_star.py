@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class A_star:
     def __init__(self, Node):
         self.root = Node
-        heuristic_value = game.GameModel.heuristic_2(Node.state)
+        heuristic_value = game.Evaluation.heuristic_2(Node.state)
         self.pq = [(Node, Node.heuristic)]
         self.explored = set()
         self.parent_cost_dict = {}
@@ -44,7 +44,7 @@ class A_star:
         for state in nextStates:
             ChildNode = nd.Node(state)
 
-                heuristic_score = game.GameModel.heuristic_2(state))
+                heuristic_score = game.Evaluation.heuristic_2(state))
             if ChildNode not in self.explored:
                 self.pq.append((ChildNode, self.parent_cost_dict[childNode] + heuristic_score)) 
                 self.parent_cost_dict[ChildNode] = [node, self.parent_cost_dict[node] + heuristic_score]        
