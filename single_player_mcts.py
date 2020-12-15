@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class Node:
     """ A node in our search space. """
-    def __init__(self, state: gm.GameState):
+    def __init__(self, state: gm.State):
         self.state = state
         self.h_sum = 0
         self.h_sum_sq = 0
@@ -148,7 +148,7 @@ class MCTS:
         children = []
         for state in node.state.get_possible_states():
             children.append(Node(state))
-            gm.GameVisualize.handle_state(
+            gm.Visual.handle_state(
                 state, f'EXPANSION_{str(state.move_taken_from_parent)}_FROM_{str(node.state)}'
             )
 
@@ -205,8 +205,8 @@ class MCTS:
 
         # Traverse to a terminal state.
         while not current_state.is_terminal() and count < self.simulation_bound:
-            current_state = gm.GameModel.make_random_move(current_state)
-            gm.GameVisualize.handle_state(current_state, f'SIMULATION_{i}')
+            current_state = gm.Evaluation.make_random_move(current_state)
+            gm.Visual.handle_state(current_state, f'SIMULATION_{i}')
             simulated_moves.append(current_state.move_taken_from_parent)
             count = count + 1
 
