@@ -11,112 +11,6 @@ import curses
 import collections
 
 
-def generate_graph(game_board):
-    G = {}
-    white_space_coordinates = set()
-    box_coordinates = set()
-    target_coordinates = set()
-    agent_coordinate = (0, 0)
-
-    for i in range(len(game_board)):
-        for j in range(len(game_board[i])):
-            if game_board[i][j] == "#":
-                pass
-            else:
-                if game_board[i][j] == " ":
-                    white_space_coordinates.add((i, j))
-                elif game_board[i][j] == ".":
-                    target_coordinates.add((i, j))
-
-                elif game_board[i][j] == "$":
-                    box_coordinates.add((i, j))
-
-                else:
-                    agent_coordinate = (i, j)
-
-                children = []
-                if j - 1 > 0 and game_board[i][j - 1] != "#":
-                    children.append((i, j - 1))
-                elif j + 1 < len(game_board[i]) and game_board[i][j + 1] != "#":
-                    children.append((i, j + 1))
-                elif i - 1 > 0 and game_board[i - 1][j] != "#":
-                    children.append((i, j))
-
-                elif i + 1 < len(game_board) and game_board[i][j + 1] != "#":
-                    children.append((i, j))
-
-                G[(i, j)] = children
-
-    return (G, white_space_coordinates, box_coordinates, target_coordinates, agent_coordinate)
-
-
-def modified_bfs(G):
-    agent_coordinate = G[4]
-    connected_components = []
-
-    explored = set()
-
-    queue = collections.deque([])
-
-    cc = []
-    while len(explored) < len(G[1]) + len(G[2]) + len(G[3]) + 1:
-        if len(queue) == 0:
-            connected_components.append(cc)
-            cc = []
-            l = G[1].union(G[3]) - explored
-            l = list(l)
-            queue.append(l[0])
-            pass
-            # add connected component and create new one
-            # pick new non_target and add start bfs from there.
-
-        else:
-            node = queue.popleft()
-            cc.append(node)
-
-            if node in G[2]:
-                pass
-            else:
-                for children in G[0][node]:
-                    if children not in explored:
-                        queue.append(children)
-
-            explored.add(node)
-
-    queue.append(agent_coordinate)
-
-    return connected_components
-
-
-def check_dead_state(game_board):
-    G = generate_graph(game_board)
-
-    connected_components = modified_bfs(G)
-
-    if len(connected_components) > 1:
-        return 0
-
-    else:
-        return 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 logger = logging.getLogger(__name__)
 _screen = None
 
@@ -180,56 +74,37 @@ class GameState:
     @staticmethod
     def build(filename: str) -> GameState:
         """ Create an instance of our game for some file. """
+        create_list_from_string = lambda a: [(int(a[i]), int(a[i + 1])) for i in range(0, int(len(a)), 2)]
         logger.info(f'Creating game for file: {filename}.')
         f = open(filename)  # For whatever relevant file.
-        params = []
 
-        line1 = f.readline()
-        params.append(int(line1[0]))  # Horizontal size.
-        params.append(int(line1[2]))  # Vertical size.
+        line1 = f.readline().strip().split(' ')
+        h_size, v_size = int(line1[0]), int(line1[1])
 
         line2 = f.readline()
-        real_start = line2.find(' ') + 1  # The first value in this line is the number of wall squares.
-        real_line2 = line2[real_start:-1]  # (which doesnt actually matter, also taking out \n)
-        num_squares = ((len(real_line2) // 2) + 1) // 2
-
-        wall_list = []
-        for i in range(num_squares):
-            x = int(real_line2[4 * i])
-            y = int(real_line2[(4 * i) + 2])
-            wall_list.append((x, y))
-        params.append(wall_list)
+        real_start = line2.find(' ') + 1
+        wall_list = create_list_from_string(line2[real_start:-1].strip().split(' '))
 
         line3 = f.readline()
-        real_start = line3.find(' ') + 1  # The first value in this line is the number of wall squares.
-        real_line3 = line3[real_start:-1]  # (which doesnt actually matter, also taking out \n)
-        num_boxes = ((len(real_line3) // 2) + 1) // 2
-
-        box_list = []
-        for i in range(num_boxes):
-            x = int(real_line3[4 * i])
-            y = int(real_line3[(4 * i) + 2])
-            box_list.append((x, y))
-        params.append(box_list)
+        real_start = line3.find(' ') + 1
+        box_list = create_list_from_string(line3[real_start:-1].strip().split(' '))
 
         line4 = f.readline()
-        real_start = line4.find(' ') + 1  # The first value in this line is the number of wall squares.
-        real_line4 = line4[real_start:-1]  # (which doesnt actually matter, also taking out \n)
-        num_locs = ((len(real_line4) // 2) + 1) // 2
+        real_start = line4.find(' ') + 1
+        loc_list = create_list_from_string(line4[real_start:-1].strip().split(' '))
 
-        loc_list = []
-        for i in range(num_locs):
-            x = int(real_line4[4 * i])
-            y = int(real_line4[(4 * i) + 2])
-            loc_list.append((x, y))
-        params.append(loc_list)
+        line5 = f.readline().strip().split(' ')
+        start_loc = (int(line5[0]), int(line5[1]))
 
-        line5 = f.readline()
-        start_loc = (int(line5[0]), int(line5[2]))
-        params.append(start_loc)
-        params.append(None)
-
-        our_game = GameState(*params)
+        our_game = GameState(**{
+            'size_h': h_size,
+            'size_v': v_size,
+            'wall_squares': wall_list,
+            'boxes': box_list,
+            'storage_locations': loc_list,
+            'starting_location': start_loc,
+            'move_taken_from_parent': None
+        })
         GameVisualize.handle_state(our_game, 'NEW_GAME_FROM_FILE')
         return our_game
 
@@ -260,8 +135,8 @@ class GameState:
 
     def is_terminal(self) -> bool:
         """ A game is in a terminal state if it is solved, or if it is in an unwinnable state. """
-        return check_dead_state(self.return_in_2d()) == 0 or self.is_solved()
-        # return self.is_solved() or any(self.in_bad_corner(x) for x in self.boxes)
+        # return check_dead_state(self.return_in_2d()) == 0 or self.is_solved()
+        return self.is_solved() or any(self.in_bad_corner(x) for x in self.boxes)
 
     def move(self, action: GameMove) -> GameState:
         """ Move to a new state. This DOES NOT mutate our current state, rather it creates a new state. """
