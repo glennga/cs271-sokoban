@@ -38,7 +38,8 @@ class Node:
 
 class Solution:
     """ A sequence of moves that take the root state to a solved state. """
-    def __init__(self, node: Node, simulated_moves: deque):
+    def __init__(self, node: Node, simulated_moves: deque, number_of_iterations: int):
+        self.number_of_iterations = number_of_iterations
         self.move_sequence = simulated_moves
 
         # Append the moves of our parents, all the way to the root.
@@ -213,7 +214,7 @@ class MCTS:
         if not current_state.is_solved():
             return self.heuristic_f(current_state)
         else:
-            return Solution(node, simulated_moves)
+            return Solution(node, simulated_moves, i + 1)
 
     def _back_propagation(self, node: Node, h: float):
         """ From the given node with a terminal state, propagate all of results up to the root. """
