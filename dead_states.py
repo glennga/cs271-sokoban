@@ -25,15 +25,15 @@ def generate_graph(game_board):
                     agent_coordinate = (i, j)
 
                 children = []
-                if j - 1 > 0 and game_board[i][j - 1] != "#":
+                if j - 1 >= 0 and game_board[i][j - 1] != "#":
                     children.append((i, j - 1))
-                elif j + 1 < len(game_board[i]) and game_board[i][j + 1] != "#":
+                if j + 1 < len(game_board[i]) and game_board[i][j + 1] != "#":
                     children.append((i, j + 1))
-                elif i - 1 > 0 and game_board[i - 1][j] != "#":
-                    children.append((i, j))
+                if i - 1 >= 0 and game_board[i - 1][j] != "#":
+                    children.append((i-1, j))
 
-                elif i + 1 < len(game_board) and game_board[i][j + 1] != "#":
-                    children.append((i, j))
+                if i + 1 < len(game_board) and game_board[i+1][j] != "#":
+                    children.append((i+1, j))
 
                 G[(i, j)] = children
 
@@ -86,7 +86,8 @@ def reachable(a,b, G):
     queue = collections.deque([])
     
     queue.append(a)
-
+    #print(G[1])
+    #print(G)
     while(len(queue) > 0):
         node = queue.popleft()
         if node != a and node in G[2]:
@@ -99,18 +100,24 @@ def reachable(a,b, G):
 
         explored.add(node)
 
+
+    #print(explored)
+
     if b in explored:
+        #print(a,b, 1)
         return 1
 
     else:
+        #print(a,b,0)
         return 0
         
 
 
 
 def check_dead_state(game_board):
-    G = generate_graph(game_board)
+    G = generate_graph(game_board)  
 
+    #print(G)
 
     box_coordinates = G[2]
     target_coordinates = G[3]
@@ -131,10 +138,16 @@ def check_dead_state(game_board):
         return 1
 
 
-#G = [['#', '#', '#', '#', '#', '#', '#', '#'], ['#', '.', '$', '#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', ' ', '@', ' ', '$', '#'], ['#', ' ', ' ', ' ', '#', ' ', '#', '#'], ['#', '#', ' ', '#', '$', ' ', '.', '#'], ['#', ' ', ' ', ' ', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '.', '#', ' ', ' ', '#'], ['#', '#', '#', '#', '#', '#', '#', '#']]
+G1 = [['#', '#', '#', '#', '#', '#', '#', '#'], ['#', '.', '$', '#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', ' ', '@', ' ', '$', '#'], ['#', ' ', ' ', ' ', '#', ' ', '#', '#'], ['#', '#', ' ', '#', '$', ' ', '.', '#'], ['#', ' ', ' ', ' ', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '.', '#', ' ', ' ', '#'], ['#', '#', '#', '#', '#', '#', '#', '#']]
 
-G = [['#', '#', '#', '#', '#'], ['#', ' ', ' ', '.', '#'], ['#', ' ', ' ', '$', '#'], ['#', ' ', ' ', '@', '#'], ['#', '#', '#', '#', '#']]
+G2 = [['#', '#', '#', '#', '#'], ['#', ' ', ' ', '.', '#'], ['#', ' ', ' ', '$', '#'], ['#', ' ', ' ', '@', '#'], ['#', '#', '#', '#', '#']]
 
+G3 = [['#', '#', '#', '#', '#'], ['#', ' ', ' ', '.', '#'], ['#', ' ', ' ', '$', '#'], ['#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '@', '#'], ['#', '#', '#', '#', '#']]
 
+G4 = [['#', '#', '#', '#', '#'], ['#', ' ', ' ', '.', '#'], ['#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '$', '#'], ['#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '@', '#'], ['#', '#', '#', '#', '#']]
 
-print(check_dead_state(G))
+print(check_dead_state(G1))
+
+print(check_dead_state(G2))
+print(check_dead_state(G3))
+print(check_dead_state(G4))
