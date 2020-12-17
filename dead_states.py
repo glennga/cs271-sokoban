@@ -23,8 +23,7 @@ def generate_graph(game_board):
 
                 else:
                     agent_coordinate = (i, j)
-                if len(box_coordinates) != len(target_coordinates):
-                    target_coordinates.union(set([agent_coordinate]))
+
 
                 children = []
                 if j - 1 >= 0 and game_board[i][j - 1] != "#":
@@ -39,6 +38,8 @@ def generate_graph(game_board):
 
                 G[(i, j)] = children
 
+    if len(box_coordinates) != len(target_coordinates):
+        target_coordinates = target_coordinates.union(set([agent_coordinate]))
     return (G, white_space_coordinates, box_coordinates, target_coordinates, agent_coordinate)
 
 
@@ -146,7 +147,7 @@ def check_dead_state_static(game_board):
     temp = []
     for box in box_coordinates:
         for target in target_coordinates:
-            if check_box_target_feasible(box, target, agent_coordinate, G):
+            if target != box and check_box_target_feasible(box, target, agent_coordinate, G):
                 temp.append(1)
                 break
 
@@ -304,9 +305,7 @@ def is_dead_state(game_board):
 
 
 # More not working
-[['#', '#', '#', '#', '#', '#', '#', '#'], ['#', '.', ' ', '#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '$', ' ', ' ', ' ', '#'], ['#', ' ', ' ', ' ', '#', ' ', '#', '#'], ['#', '#', ' ', '#', ' ', '$', '@', '#'], ['#', ' ', ' ', '$', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '.', '#', ' ', ' ', '#'], ['#', '#', '#', '#', '#', '#', '#', '#']]
-
-
+[['#', '#', '#', '#', '#', '#', '#', '#'], ['#', '.', ' ', '#', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '$', ' ', ' ', ' ', '#'], ['#', ' ', ' ', ' ', '#', ' ', '#', '#'], ['#', '#', ' ', '#', ' ', '@', '$', '#'], ['#', ' ', ' ', '$', ' ', ' ', ' ', '#'], ['#', ' ', ' ', '.', '#', ' ', ' ', '#'], ['#', '#', '#', '#', '#', '#', '#', '#']]
 
 
 
