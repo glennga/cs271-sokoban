@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List, Tuple
 from hungarian_alg import Hungarian
+from dead_states import is_dead_state
 
 import __init__
 import random
@@ -8,7 +9,6 @@ import logging
 import enum
 import math
 import curses
-import collections
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class State:
         self.current_location = starting_location
         self.move_taken_from_parent = move_taken_from_parent
 
-    def return_in_2d(self):
+    def as_2d_array(self):
         return [[y for y in x] for x in str(self).split('\n')][:-1]
 
     def __str__(self):
@@ -135,8 +135,7 @@ class State:
 
     def is_terminal(self) -> bool:
         """ A game is in a terminal state if it is solved, or if it is in an unwinnable state. """
-        # return check_dead_state(self.return_in_2d()) == 0 or self.is_solved()
-        return self.is_solved() or any(self.in_bad_corner(x) for x in self.boxes)
+        return is_dead_state(self.as_2d_array(), self.storage_locations) or self.is_solved()
 
     def move(self, action: Action) -> State:
         """ Move to a new state. This DOES NOT mutate our current state, rather it creates a new state. """
